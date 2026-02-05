@@ -435,8 +435,11 @@ function loop(){
 
  }
 
-  if(state==="end"){
- return;
+if(state==="end"){
+ drawAvatar();
+ drawClothes();
+}
+;
 
 
  }
@@ -464,21 +467,20 @@ setInterval(()=>{
 
 function finish(){
 
+ if(state==="end") return; // ←追加
+
  state="end";
 
  let max=0;
 
  materials.forEach(m=>{
-
   if(score[m.name]>max){
    max=score[m.name];
    dominant=m;
   }
-
  });
 
  if(dominant) showFinalMessage(dominant);
-
 }
 
 
