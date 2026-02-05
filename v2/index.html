@@ -131,7 +131,7 @@ button{
 
 <div id="top">
 
- <div id="time">15s</div>
+ <div id="time">20s</div>
 
  <canvas id="game"></canvas>
 
@@ -169,7 +169,7 @@ ctx.scale(dpr,dpr);
 /* ===== State ===== */
 
 let state="ready";
-let time=15;
+let time=20;
 let timer=0;
 let parts=[];
 let dominant=null;
@@ -439,6 +439,14 @@ function loop(){
 
  }
 
+
+ if(state==="end"){
+ return;
+
+
+ }
+
+
  requestAnimationFrame(loop);
 
 }
@@ -499,7 +507,7 @@ canvas.addEventListener("touchmove",(e)=>{
 document.getElementById("startBtn").onclick=()=>{
 
  state="playing";
- time=15;
+ time=20;
  parts=[];
  timer=0;
  dominant=null;
@@ -524,3 +532,4 @@ loop();
 
 </body>
 </html>
+
