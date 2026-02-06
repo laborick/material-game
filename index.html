@@ -131,7 +131,7 @@ button{
 
 <div id="top">
 
- <div id="time">15s</div>
+ <div id="time">10s</div>
 
  <canvas id="game" width="360" height="450"></canvas>
 
@@ -153,7 +153,7 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 let state="ready";
-let time=15;
+let time=10;
 let timer=0;
 let parts=[];
 let dominant=null;
@@ -497,7 +497,7 @@ canvas.addEventListener("touchmove",(e)=>{
 document.getElementById("startBtn").onclick=()=>{
 
  state="playing";
- time=15;
+ time=10;
  parts=[];
  timer=0;
  dominant=null;
@@ -510,7 +510,7 @@ document.getElementById("startBtn").onclick=()=>{
 
  updateScore();
 
- document.getElementById("time").innerText="15s";
+ document.getElementById("time").innerText="10s";
  document.getElementById("resultCard").style.display="none";
 
 };
