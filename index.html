@@ -275,14 +275,18 @@ function drawAvatar(){
 // ===== Clothes =====
 
 function drawClothes(){
+
  if(!dominant) return;
+
+ resetCtx();
 
  const s = avatar.scale;
 
- ctx.fillStyle=dominant.color;
- ctx.strokeStyle="#000";
- ctx.lineWidth=2;
+ ctx.fillStyle = dominant.color;
+ ctx.strokeStyle = "#333";
+ ctx.lineWidth = 2;
 
+ // ===== 胴体 =====
  ctx.beginPath();
  ctx.roundRect(
   avatar.x-24*s,
@@ -294,11 +298,38 @@ function drawClothes(){
  ctx.fill();
  ctx.stroke();
 
- ctx.fillStyle="#000";
+ // ===== 袖 =====
+ ctx.beginPath();
+
+ ctx.roundRect(
+  avatar.x-42*s,
+  avatar.y-16*s,
+  18*s,
+  26*s,
+  7*s
+ );
+
+ ctx.roundRect(
+  avatar.x+24*s,
+  avatar.y-16*s,
+  18*s,
+  26*s,
+  7*s
+ );
+
+ ctx.fill();
+ ctx.stroke();
+
+ // ===== ロゴ =====
+ ctx.fillStyle="#111";
  ctx.font=`bold ${11*s}px Arial`;
  ctx.textAlign="center";
- ctx.fillText("LABORICK",avatar.x,avatar.y);
+ ctx.textBaseline="middle";
+ ctx.fillText("LABORICK", avatar.x, avatar.y);
+
+ resetCtx();
 }
+
 
 // ===== Parts =====
 
