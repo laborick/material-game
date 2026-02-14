@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LABORICK</title>
+<style>
+body{ margin:0; background:#ffffff; }
+canvas{ display:block; margin:0 auto; background:#ffffff; touch-action:manipulation;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+let w = window.innerWidth;
+let h = window.innerHeight;
+canvas.width = w;
+canvas.height = h;
+
+const s = Math.min(w,h)/300;
+let stage = 0;
+let breathTime = 0;
+
+// アバター定義
+const avatar = { 
+  x:w/2, 
+  y:h/2 + 40*s, 
+  scale:s, 
+  final:false  // 最終形態で呼吸を開始するフラグ
+};
+const dominant = { color:"#87CEFA" };
+
+// 素材（棒や蝶）
+let balls = [];
+let spawnCount = 0;
+
+function spawnBall(){
+  balls.push({
+    x: Math.random()*w,
+    y: h+20,
+    r: 16*s,
+    active: true,
+    vy: -0.5 - Math.random()*0.5,
+    absorbed: false,
+    angle: 0
+  });
+  spawnCount++;
+}
+
+spawnBall();
+
+// 金粉（星）
+let sparkles = [];
+function createSparkles(mult=1){
+  for(let i=0;i<75*mult;i++){
+    let baseSize = Math.random()*3*s + 1;
+    if(Math.random() < 0.2) baseSize *= 2.5;
+
+    sparkles.push({
+      x: w/2 + (Math.random()-0.5)*120*s,
+      y: h/2 + (Math.random()-0.5)*120*s,
+      size: baseSize,
+      alpha: 1,
+      vx: (Math.random()-0.5)*0.5,
+      vy: -Math.random()*1.2,
+      life: 10
+    });
+  }
+}
+
+// 星を描く関数
+function drawStar(ctx, cx, cy, outerRadius, points, inset){
+  const step = Math.PI / points;
+  ctx.beginPath();
+  for(let i = 0; i < 2*points; i++){
+    const r = (i%2 === 0) ? outerRadius : outerRadius*inset;
+    const a = i*step - Math.PI/2;
+    ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+// 棒人間を描く関数（白固定）
+function drawAvatar(){
+  const a = avatar, s = a.scale;
+  ctx.lineWidth=2; ctx.strokeStyle="#000"; ctx.fillStyle="#fff";
+
+  // 頭
+  ctx.beginPath();
+  ctx.arc(a.x,a.y-32*s,12*s,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+
+  // 胴体
+  ctx.fillRect(a.x-7*s,a.y-18*s,14*s,44*s);
+  ctx.strokeRect(a.x-7*s,a.y-18*s,14*s,44*s);
+
+  // 袖
+  ctx.fillRect(a.x-28*s,a.y-4*s,20*s,6*s);
+  ctx.fillRect(a.x+8*s,a.y-4*s,20*s,6*s);
+  ctx.strokeRect(a.x-28*s,a.y-4*s,20*s,6*s);
+  ctx.strokeRect(a.x+8*s,a.y-4*s,20*s,6*s);
+
+  // 手
+  ctx.fillRect(a.x-7*s,a.y+24*s,7*s,26*s);
+  ctx.fillRect(a.x+2*s,a.y+24*s,7*s,26*s);
+  ctx.strokeRect(a.x-7*s,a.y+24*s,7*s,26*s);
+  ctx.strokeRect(a.x+2*s,a.y+24*s,7*s,26*s);
+}
+
+// 服描画（最終形態）
+function drawClothes(){
+  if(!dominant) return;
+  const a = avatar, s = a.scale;
+  ctx.fillStyle = dominant.color; ctx.strokeStyle="#333"; ctx.lineWidth=2;
+
+  ctx.beginPath();
+  ctx.roundRect(a.x-24*s,a.y-28*s,48*s,64*s,14*s);
+  ctx.fill(); ctx.stroke();
+
+  ctx.beginPath();
+  ctx.roundRect(a.x-42*s,a.y-16*s,18*s,26*s,7*s);
+  ctx.roundRect(a.x+24*s,a.y-16*s,18*s,26*s,7*s);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle="#111";
+  ctx.font=`bold ${11*s}px Arial`;
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("LABORICK", a.x, a.y);
+}
+
+// ===== メイン描画 =====
+function draw(){
+  ctx.clearRect(0,0,w,h);
+
+  // ===== 呼吸 =====
+  breathTime += 0.01;
+  let amplitude = 0, speed = 0;
+  if(stage === 2 && avatar.final){
+    amplitude = 9;   // 振れ幅
+    speed = 0.11;    // 呼吸速度
+  }
+  const breathOffset = Math.sin(breathTime / speed) * amplitude;
+  avatar.y = h/2 + 40*s + (stage===2 && avatar.final ? breathOffset : 0);
+
+  // ===== アバター描画 =====
+  if(stage===0) {
+    // 白丸
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(avatar.x,avatar.y,15*s,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+  }
+  else if(stage===1){
+    // 白い棒人間
+    drawAvatar();
+  }
+  else if(stage===2){
+    // 最終形態：棒人間+服
+    drawAvatar();
+    drawClothes();
+  }
+
+  // ===== 素材（棒・蝶）描画と吸収 =====
+  balls.forEach(ball=>{
+    if(!ball.active) return;
+    if(!ball.absorbed && stage!==1) ball.y += ball.vy;
+
+    ctx.beginPath();
+    if(stage===0){
+      // 棒
+      const stickWidth = 4*s, stickHeight = 30*s;
+      ctx.rect(ball.x-stickWidth/2, ball.y-stickHeight/2, stickWidth, stickHeight);
+      ctx.strokeStyle="#000"; ctx.stroke();
+    }
+    else if(stage===1){
+      // 蝶
+      const size = ball.r;
+      const baseX = avatar.x, baseY = avatar.y-110*s;
+      const floatOffset = Math.sin(Date.now()*0.003)*8*s;
+      const drawY = baseY + floatOffset;
+      ctx.fillStyle = dominant ? dominant.color : "#fff";
+      ctx.strokeStyle = "#000";
+
+      // 左三角
+      ctx.beginPath();
+      ctx.moveTo(baseX, drawY);
+      ctx.lineTo(baseX-size, drawY-size);
+      ctx.lineTo(baseX-size, drawY+size);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      // 右三角
+      ctx.beginPath();
+      ctx.moveTo(baseX, drawY);
+      ctx.lineTo(baseX+size, drawY-size);
+      ctx.lineTo(baseX+size, drawY+size);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      if(!ball.absorbed){ ball.x=baseX; ball.y=drawY; }
+    }
+    else{
+      // ステージ2以降の丸素材
+      ctx.rect(ball.x-ball.r, ball.y-ball.r, ball.r*2, ball.r*2);
+      ctx.stroke();
+    }
+
+    // ===== 吸収判定 =====
+    const dx = avatar.x-ball.x, dy=avatar.y-ball.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    let absorbDistance = stage===1 ? 40*s : 100;
+
+    if(dist<absorbDistance || ball.absorbed){
+      ball.absorbed=true;
+      ball.x += dx*0.03; ball.y += dy*0.03;
+
+      if("vibrate" in navigator) navigator.vibrate([50]);
+
+      let finished=false;
+      if(stage===1){
+        if(ball.r<2*s) finished=true;
+        else ball.r*=0.97;
+      } else {
+        if(dist<10*s) finished=true;
+      }
+
+      if(finished){
+        ball.active=false;
+        if(stage<2 && spawnCount<3){
+          spawnBall(); stage++;
+        } else if(stage===2 && !avatar.final){
+          createSparkles(2);
+          avatar.final=true;
+        }
+      }
+    }
+  });
+
+  // ===== 金粉描画 =====
+  sparkles.forEach((sp,i)=>{
+    ctx.globalAlpha=sp.alpha;
+    ctx.fillStyle="gold";
+    drawStar(ctx, sp.x, sp.y, sp.size, 5, 0.5);
+    ctx.globalAlpha=1;
+
+    sp.x+=sp.vx; sp.y+=sp.vy;
+    sp.life-=1/60; sp.alpha=sp.life/10;
+    if(sp.life<=0) sparkles.splice(i,1);
+  });
+}
+
+// ===== アニメーション開始 =====
+function animate(){ draw(); requestAnimationFrame(animate); }
+animate();
+
+// ===== タッチで吸収 =====
+canvas.addEventListener("click", e=>{
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX-rect.left;
+  const y = e.clientY-rect.top;
+  balls.forEach(ball=>{
+    if(!ball.active) return;
+    const dist = Math.sqrt((x-ball.x)**2 + (y-ball.y)**2);
+    if(stage===1){
+      if(dist<40*s) ball.absorbed=true;
+    } else {
+      if(dist<ball.r) ball.absorbed=true;
+    }
+  });
+});
+</script>
+</body>
+</html>
